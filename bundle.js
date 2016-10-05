@@ -3,19 +3,72 @@
 
 /* Classes */
 const Game = require('./game');
+const Grid = require('./grid');
+const Pipe = require('./pipe')
 
 /* Global variables */
 var canvas = document.getElementById('screen');
 var game = new Game(canvas, update, render);
+var currentIndex, currentX, currentY;
+
+// Pipes in Play
+var pip = [];
+var pipeStart = new Pipe({x: Math.floor(Math.random() * 3), y: 8});
+var pipeEnd = new Pipe({x: Math.floor(Math.random() * 3), y: 0});
+
+var grid = [];
+for (var x = 0; x < 9; x++) {
+  for (var y = 0; y < 9; y++) {
+    grid.push({x: x, y: y, used: false});
+  }
+}
+
 var image = new Image();
 image.src = 'assets/pipes.png';
 
-// TODO: Place the pipe tiles on the board in random order
-
+// Left Click
 canvas.onclick = function(event) {
   event.preventDefault();
-  // TODO: determine which pipe tile was clicked on
-  // TODO: rotate the pipes in the pipe tile
+  // TODO: Place or rotate pipe tile
+  currentX = Math.floor((event.offsetX - 10) / 65);
+  currentY = Math.floor((event.offsetY - 10) / 65);
+  currentIndex = currentY * 9 + currentX;
+
+  if (currentX > 8 || currentY > 8) return;
+  if (grid[currentIndex].used) {
+    for (var i = 0; i < pip.length; i++) {
+      if (pip[i].x == currentX && pip[i].y == currentY) {
+        pip[i] = new Pipe({x: currentX, y: currentY})
+      }
+    }
+  } else {
+    grid[currentIndex].used = true;
+    pip.push(new Pipe({x: currentX, y: currentY}));
+  }
+}
+
+// Right Click
+// TODO: Figure out rotation
+canvas.oncontextmenu = function(event) {
+  event.preventDefault();
+  currentX = Math.floor((event.offsetX - 10) / 65);
+  currentY = Math.floor((event.offsetY - 10) / 65);
+
+  var ctx = canvas.getContext('2d');
+
+  for (var i = 0; i < pip.length; i++) {
+    if (pip[i].x == currentX && pip[i].y == currentY) {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.save();
+      ctx.translate(canvas.width, canvas.height);
+      ctx.rotate(90*Math.PI/180);
+      pip[i].width = (pip[i].width * -1);
+      pip[i].height = (pip[i].height * -1);
+      pip[i].renderPipe(ctx);
+      ctx.restore();
+
+    }
+  }
 }
 
 /**
@@ -39,7 +92,6 @@ masterLoop(performance.now());
  * the number of milliseconds passed since the last frame.
  */
 function update(elapsedTime) {
-
   // TODO: Advance the fluid
 }
 
@@ -51,14 +103,33 @@ function update(elapsedTime) {
   * @param {CanvasRenderingContext2D} ctx the context to render to
   */
 function render(elapsedTime, ctx) {
-  ctx.fillStyle = "#777777";
+  ctx.fillStyle = "#000000";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Render the board
+  for (var y = 0; y < 9; y++) {
+    for (var x = 0; x < 9; x++) {
+      var slot = grid[y * 9 + x];
+      if (!slot.used) {
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(x * 65 + 10, y * 65 + 10, 64, 64);
+      } else {
+        // ctx.fillStyle = "#8E44AD";
+        // ctx.fillRect(x * 65 + 10, y * 65 + 10, 64, 64);
+      }
+    }
+  }
 
-  // TODO: Render the board
+  // Draw Pipes
+  pipeStart.renderPipe(ctx);
+  pipeEnd.renderPipe(ctx);
+  for (var i = 0; i < pip.length; i++) {
+    pip[i].renderPipe(ctx);
+  }
+
 
 }
 
-},{"./game":2}],2:[function(require,module,exports){
+},{"./game":2,"./grid":3,"./pipe":4}],2:[function(require,module,exports){
 "use strict";
 
 /**
@@ -114,6 +185,77 @@ Game.prototype.loop = function(newTime) {
 
   // Flip the back buffer
   this.frontCtx.drawImage(this.backBuffer, 0, 0);
+}
+
+},{}],3:[function(require,module,exports){
+"use strict;"
+
+/**
+  * @module exports the Grid Class
+  */
+module.exports = exports = Grid;
+
+function Grid(width, height, cellSize) {
+  this.cellSize = cellSize;
+  this.widthInCells = Math.ceil(width / cellSize);
+  this.heightInCells = Math.ceil(height / cellSize);
+  this.cells = [];
+  this.numberOfCells = this.widthInCells * this.heightInCells;
+  for(var i = 0; i < this.numberOfCells; i++) {
+    this.cells[i] = [];
+  }
+  this.cells[-1] = [];
+}
+
+Grid.prototype.renderCells = function(ctx) {
+  for(var x = 0; x < this.widthInCells; x++) {
+    for(var y = 0; y < this.heightInCells; y++) {
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.strokeRect(x * this.cellSize, y * this.cellSize, this.cellSize, this.cellSize);
+    }
+  }
+}
+
+},{}],4:[function(require,module,exports){
+"use strict;"
+
+/**
+  * @module exports the Pipe Class
+  */
+module.exports = exports = Pipe;
+
+function Pipe(position) {
+  this.x = position.x;
+  this.y = position.y;
+  this.width = 31.75;
+  this.height = 32;
+  this.spritesheet = new Image();
+  this.spritesheet.src = encodeURI("assets/pipes.png");
+
+  var genX;
+  var genY;
+  do {
+    genX = Math.floor(Math.random() * 3);
+    genY = Math.floor(Math.random() * 4);
+  } while ((genX == 3 && genY == 3) || (genX == 0 && genY == 4) ||
+            (genX == 3 && genY == 4));
+  this.imageX = genX;
+  this.imageY = genY;
+
+  this.hasFluid = false;
+
+}
+
+Pipe.prototype.renderPipe = function(ctx) {
+
+  ctx.drawImage(
+    // image
+    this.spritesheet,
+    // source rectangle
+    this.imageX * 31.75, this.imageY * 32, this.width, this.height,
+    // destination rectangle
+    (this.x * 65) + 10, (this.y * 65) + 10, 64, 64
+  );
 }
 
 },{}]},{},[1]);
