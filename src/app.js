@@ -161,20 +161,29 @@ function update(elapsedTime) {
     return;
   }
 
-  if (fluidArr[fluidPos].x == pipeEnd.x && (fluidArr[fluidPos].y - 1) == pipeEnd.y
+  if (pip.length == 1 && (fluidArr[fluidPos].x != pipeEnd.x &&
+      (fluidArr[fluidPos].y - 1) != pipeEnd.y) && Math.abs(fluidArr[fluidPos].width) == 64) {
+    gameIsOver();
+    return;
+  }
+
+  if ((fluidArr[fluidPos].x == pipeEnd.x && (fluidArr[fluidPos].y - 2) == pipeEnd.y)
     && Math.abs(fluidArr[fluidPos].width) == 64) {
+
     advanceLevel();
+
+    return;
   }
 
   // Track the fluid size
   if (Math.abs(fluidArr[fluidPos].width) == 64) {
 
+    // if (pip.length == 1 && (fluidArr[fluidPos].x != pipeEnd.x &&
+    //     (fluidArr[fluidPos].y - 1) != pipeEnd.y)) {
+    //   gameIsOver();
+    //   return;
+    // }
 
-    if (pip.length == 1 && (fluidArr[fluidPos].x != pipeEnd.x &&
-        (fluidArr[fluidPos].y - 1) != pipeEnd.y)) {
-      gameIsOver();
-      return;
-    }
     for (var i = 1; i < pip.length; i++) {
       console.log("Pipes size: ", pip.length);
       var direction = fluidArr[fluidPos].direction;
@@ -186,12 +195,6 @@ function update(elapsedTime) {
         case "up" :
           checkY = fluidArr[fluidPos].y - 2;
           checkX = fluidArr[fluidPos].x;
-
-          console.log("up, " + pip[i].directions.up);
-          console.log("down, " + pip[i].directions.down);
-          console.log("left, " + pip[i].directions.left);
-          console.log("right, " + pip[i].directions.right);
-
 
           if (pip[i].x == checkX && pip[i].y == checkY && canConnect(pip[i], direction)) {
             // Increase fluid size if able to flow through
@@ -224,9 +227,6 @@ function update(elapsedTime) {
     }
   } else if (fluidArr[fluidPos].width < 64) {
     fluidArr[fluidPos].updateFluid(elapsedTime);
-  } else {
-    gameOver = true;
-    console.log("WHERE AM I");
   }
 
 }
@@ -301,6 +301,7 @@ function advanceLevel() {
   pip = [];
   fluidArr = [];
   grid = [];
+  pipesWithFluid = [];
   initialize();
 
   level++;
