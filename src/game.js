@@ -5,6 +5,8 @@
  */
 module.exports = exports = Game;
 
+
+
 /**
  * @constructor Game
  * Creates a new game object
@@ -27,6 +29,9 @@ function Game(screen, updateFunction, renderFunction) {
   // Start the game loop
   this.oldTime = performance.now();
   this.paused = false;
+
+  // this.backgroundMusic = new Audio();
+  // this.backgroundMusic.src = 'assets/background_music.wav';
 }
 
 /**
@@ -53,4 +58,6 @@ Game.prototype.loop = function(newTime) {
 
   // Flip the back buffer
   this.frontCtx.drawImage(this.backBuffer, 0, 0);
+
+  // this.backgroundMusic.play();
 }
